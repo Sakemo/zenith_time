@@ -11,7 +11,7 @@ class Task extends HiveObject {
   String name;
 
   @HiveField(2)
-  final String project_id;
+  final String projectId;
 
   @HiveField(3)
   final DateTime createdAt;
@@ -19,7 +19,7 @@ class Task extends HiveObject {
   Task({
     required this.id,
     required this.name,
-    required this.project_id,
+    required this.projectId,
     required this.createdAt,
   });
 }

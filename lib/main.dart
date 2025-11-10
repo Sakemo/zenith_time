@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
+
+//database
+import 'package:zenith_time/core/database/database_service.dart';
+
 //models
 import 'package:zenith_time/core/models/project_model.dart';
 import 'package:zenith_time/core/models/task_model.dart';
@@ -14,6 +18,8 @@ Future<void> main() async {
   Hive.registerAdapter(ProjectAdapter());
   Hive.registerAdapter(TaskAdapter());
   Hive.registerAdapter(TimeEntryAdapter());
+
+  await DatabaseService.openBoxes();
 
   runApp(const ZenithTimeApp());
 }
