@@ -39,8 +39,9 @@ class _TrackerScreenState extends State<TrackerScreen> {
       _tasksByProject = {};
 
       for (final project in _projects) {
-        _tasksByProject[project.id] ==
-            allTasks.where((task) => task.projectId == project.id).toList();
+        _tasksByProject[project.id] = allTasks
+            .where((task) => task.projectId == project.id)
+            .toList();
       }
     });
   }
@@ -92,8 +93,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
               selectedTileColor: AppTheme.adwaitaHeaderBar,
               onTap: () {
                 setState(() {
-                  _selectedTask:
-                  task;
+                  _selectedTask = task;
                   _taskNameController.text = task.name;
                 });
               },
