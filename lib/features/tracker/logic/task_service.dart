@@ -8,7 +8,7 @@ class TaskService {
 
   final _uuid = const Uuid();
 
-  Future<void> addTask(String name, String projectId) async {
+  Future<Task> addTask(String name, String projectId) async {
     if (projectId.isEmpty) {
       throw Exception('Needs a project');
     }
@@ -21,6 +21,8 @@ class TaskService {
     );
 
     await _tasksBox.put(newTask.id, newTask);
+
+    return newTask;
   }
 
   List<Task> getTasksForProject(String projectId) {
