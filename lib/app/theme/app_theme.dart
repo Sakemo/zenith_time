@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-const Color adwaitaBlue = Color(0xFF3584e4);
-const Color adwaitaBackground = Color(0xFFfafafa);
-const Color adwaitaHeaderBar = Color(0xFFebebeb);
-const Color adwaitaTextColor = Color(0xFF2e3436);
-
 class AppTheme {
+  static const Color adwaitaBlue = Color(0xFF3584e4);
+  static const Color adwaitaBackground = Color(0xFFfafafa);
+  static const Color adwaitaHeaderBar = Color(0xFFebebeb);
+  static const Color adwaitaTextColor = Color(0xFF2e3436);
+
   static ThemeData get themeData {
     return ThemeData(
       useMaterial3: true,

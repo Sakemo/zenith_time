@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
 
 //database
@@ -9,6 +10,11 @@ import 'package:zenith_time/core/database/database_service.dart';
 import 'package:zenith_time/core/models/project_model.dart';
 import 'package:zenith_time/core/models/task_model.dart';
 import 'package:zenith_time/core/models/time_entry_model.dart';
+
+//logic
+import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
+import 'package:zenith_time/features/tracker/logic/timer_service.dart';
+import 'package:zenith_time/features/tracker/ui/tracker_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,17 +35,13 @@ class ZenithTimeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Zenith Time',
-      theme: AppTheme.themeData,
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Zenith Time'),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-        ),
-        body: const Center(child: Text('Olá, Zenith Time!')),
+    return ChangeNotifierProvider(
+      create: (context) => TimerService(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Zenith Time',
+        theme: AppTheme.themeData,
+        home: const TrackerScreen(),
       ),
     );
   }
