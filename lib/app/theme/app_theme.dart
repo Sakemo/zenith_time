@@ -34,6 +34,10 @@ class AppTheme {
           fontSize: 16,
         ),
       ),
+
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
     );
   }
 }

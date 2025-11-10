@@ -24,25 +24,18 @@ class _TrackerScreenState extends State<TrackerScreen> {
   Widget build(BuildContext context) {
     return Consumer<TimerService>(
       builder: (context, timerService, child) {
-        return Scaffold(
-          body: Row(
+        return Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSidebar(),
+              _buildActionToolbar(timerService),
+              const SizedBox(height: 24),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildActionToolbar(timerService),
-                      const SizedBox(height: 24),
-                      Center(
-                        child: Text(
-                          'lista e relatorios aqui',
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      ),
-                    ],
+                child: Center(
+                  child: Text(
+                    'lista e relatorios aqui',
+                    style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ),
               ),
@@ -53,20 +46,31 @@ class _TrackerScreenState extends State<TrackerScreen> {
     );
   }
 
-  Widget _buildSidebar() {
-    return Container(
-      width: 80,
-      color: const Color(0xFF1e1e1e),
-      child: const Column(
-        children: [
-          SizedBox(height: 24),
-          Icon(Icons.timer_outlined, color: Colors.white, size: 32),
-          SizedBox(height: 24),
-          Icon(Icons.folder_outlined, color: Colors.grey, size: 32),
-        ],
-      ),
-    );
-  }
+  // Widget _buildSidebar() {
+  //   return Container(
+  //     width: 80,
+  //     color: const Color(0xFF1e1e1e),
+  //     child: Column(
+  //       children: [
+  //         SizedBox(height: 24),
+  //         Icon(Icons.timer_outlined, color: Colors.white, size: 32),
+  //         SizedBox(height: 24),
+  //         IconButton(
+  //           icon: const Icon(
+  //             Icons.folder_outlined,
+  //             color: Colors.grey,
+  //             size: 32,
+  //           ),
+  //           onPressed: () {
+  //             Navigator.of(context).push(
+  //               MaterialPageRoute(builder: (context) => const ProjectsScreen()),
+  //             );
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
