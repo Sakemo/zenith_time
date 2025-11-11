@@ -30,7 +30,7 @@ class _MainShellState extends State<MainShell> {
       padding: const EdgeInsets.symmetric(vertical: 24.0),
       decoration: BoxDecoration(
         color: AppTheme.adwaitaTextColor,
-        borderRadius: BorderRadius.circular(8.0),
+        borderRadius: BorderRadius.circular(6.0),
       ),
       child: Column(
         children: [
@@ -75,7 +75,7 @@ class _MainShellState extends State<MainShell> {
               child: Container(
                 decoration: BoxDecoration(
                   color: AppTheme.adwaitaBackground,
-                  borderRadius: BorderRadius.circular(8.0),
+                  borderRadius: BorderRadius.circular(6.0),
                 ),
                 child: _buildCurrentScreen(),
               ),

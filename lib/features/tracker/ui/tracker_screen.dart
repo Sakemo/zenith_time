@@ -120,13 +120,13 @@ class _TrackerScreenState extends State<TrackerScreen> {
   }) {
     return InkWell(
       onTap: onPressed,
-      borderRadius: BorderRadius.circular(8.0),
+      borderRadius: BorderRadius.circular(6.0),
       child: Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(8.0),
+          borderRadius: BorderRadius.circular(6.0),
         ),
         child: Icon(icon, color: Colors.white),
       ),
@@ -155,9 +155,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
 
         return Container(
           width: 280,
+          padding: EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: AppTheme.adwaitaBackground,
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: BorderRadius.circular(6.0),
             boxShadow: [
               BoxShadow(
                 color: AppTheme.adwaitaTextColor.withOpacity(0.1),
@@ -179,7 +180,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
                     prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                      borderRadius: BorderRadius.circular(6.0),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
