@@ -8,11 +8,17 @@ class ProjectService {
 
   final _uuid = const Uuid();
 
-  Future<void> addProject(String name) async {
+  Future<void> addProject(
+    String name,
+    int iconCodePoint,
+    int colorValue,
+  ) async {
     final newProject = Project(
       id: _uuid.v4(),
       name: name,
       createdAt: DateTime.now(),
+      iconCodePoint: iconCodePoint,
+      colorValue: colorValue,
     );
 
     await _projectsBox.put(newProject.id, newProject);

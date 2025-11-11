@@ -13,5 +13,18 @@ class Project extends HiveObject {
   @HiveField(2)
   final DateTime createdAt;
 
-  Project({required this.id, required this.name, required this.createdAt});
+  // custom
+  @HiveField(3)
+  int iconCodePoint;
+
+  @HiveField(4)
+  int colorValue;
+
+  Project({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.iconCodePoint,
+    required this.colorValue,
+  });
 }

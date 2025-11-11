@@ -29,7 +29,7 @@ class _MainShellState extends State<MainShell> {
       width: 80,
       padding: const EdgeInsets.symmetric(vertical: 24.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF1e1e1e),
+        color: AppTheme.adwaitaTextColor,
         borderRadius: BorderRadius.circular(8.0),
       ),
       child: Column(

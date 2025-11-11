@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color adwaitaBlue = Color(0xFF3584e4);
-  static const Color adwaitaBackground = Color(0xFFfafafa);
-  static const Color adwaitaHeaderBar = Color(0xFFebebeb);
-  static const Color adwaitaTextColor = Color(0xFF2e3436);
+  // Noire Truth
+  // static const Color adwaitaBlue = Color(0xFF1E1C32);
+  // static const Color adwaitaBackground = Color(0xFFC6BAAC);
+  // static const Color adwaitaHeaderBar = Color(0xFF1E1C32);
+  // static const Color adwaitaTextColor = Color(0xFF1E1C32);
+
+  static const Color adwaitaBlue = Color(0xFF1E1C32);
+  static const Color adwaitaBackground = Color(0xFFF0F6F0);
+  static const Color adwaitaHeaderBar = Color(0xFF222323);
+  static const Color adwaitaTextColor = Color(0xFF222323);
 
   static ThemeData get themeData {
     return ThemeData(
@@ -35,8 +41,15 @@ class AppTheme {
         ),
       ),
 
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
+        ),
+      ),
+
       dialogTheme: DialogThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+        backgroundColor: AppTheme.adwaitaBackground,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.0)),
       ),
     );
   }

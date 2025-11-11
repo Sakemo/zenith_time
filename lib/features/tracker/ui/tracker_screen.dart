@@ -23,6 +23,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
   List<Project> _projects = [];
   Map<String, List<Task>> _tasksByProject = {};
   Task? _selectedTask;
+  Project? _selectedProject;
 
   @override
   void initState() {
@@ -35,6 +36,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
   void _loadData() {
     setState(() {
       _projects = _projectService.getAllProjects();
+      if (_selectedProject == null && _projects.isNotEmpty) {
+        _selectedProject = _projects.first;
+      }
+
       final allTasks = _taskService.getAllTasks();
       _tasksByProject = {};
 
@@ -104,6 +109,26 @@ class _TrackerScreenState extends State<TrackerScreen> {
     );
   }
 
+  Widget _buildSoftSquareButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(8.0),
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Icon(icon, color: Colors.white),
+      ),
+    );
+  }
+
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(duration.inHours);
@@ -128,6 +153,49 @@ class _TrackerScreenState extends State<TrackerScreen> {
         ),
         const SizedBox(width: 16),
 
+        PopupMenuButton<Project>(
+          onSelected: (Project project) {
+            setState(() {
+              _selectedProject = project;
+            });
+          },
+          itemBuilder: (BuildContext context) {
+            return _projects.map((Project project) {
+              return PopupMenuItem<Project>(
+                value: project,
+                child: Row(
+                  children: [
+                    Text(project.name),
+                    if (_selectedProject?.id == project.id) ...[
+                      const SizedBox(width: 8),
+                      const Icon(Icons.check, size: 16),
+                    ],
+                  ],
+                ),
+              );
+            }).toList();
+          },
+          tooltip: 'Select project',
+          child: _selectedProject == null
+              ? const Icon(Icons.folder_outlined, color: Colors.grey)
+              : Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Color(_selectedProject!.colorValue).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    IconData(
+                      _selectedProject!.iconCodePoint,
+                      fontFamily: 'MaterialIcons',
+                    ),
+                    color: Color(_selectedProject!.colorValue),
+                  ),
+                ),
+        ),
+
+        const SizedBox(width: 16),
+
         Text(
           _formatDuration(timerService.elapsedDuration),
           style: const TextStyle(
@@ -138,44 +206,48 @@ class _TrackerScreenState extends State<TrackerScreen> {
         ),
         const SizedBox(width: 16),
 
-        IconButton(
-          icon: Icon(
-            timerService.isRunning ? Icons.stop_circle : Icons.play_circle,
-            size: 36,
-          ),
+        _buildSoftSquareButton(
+          icon: timerService.isRunning ? Icons.stop : Icons.play_arrow,
+          color: timerService.isRunning
+              ? AppTheme.adwaitaTextColor
+              : AppTheme.adwaitaBlue,
           onPressed: () async {
             if (timerService.isRunning) {
-              timerService.stopTimer();
-              _taskNameController.clear();
+              await timerService.stopTimer();
+              setState(() {
+                _selectedTask = null;
+                _taskNameController.clear();
+              });
             } else {
               final taskName = _taskNameController.text;
               if (taskName.isEmpty) return;
-              if (_selectedTask != null) {
-                if (_selectedTask!.name != taskName) {
-                  _selectedTask!.name = taskName;
-                  await _taskService.updateTask(_selectedTask!);
-                }
-                await timerService.startTimer(_selectedTask!);
+
+              Task taskToStart;
+
+              if (_selectedTask != null && _selectedTask!.name == taskName) {
+                taskToStart = _selectedTask!;
               } else {
-                if (_projects.isEmpty) {
+                if (_selectedProject == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Create a project first')),
+                    const SnackBar(
+                      content: Text('Create and select a project first'),
+                    ),
                   );
                   return;
                 }
 
-                final projectId = _projects.first.id;
-                final newTask = await _taskService.addTask(taskName, projectId);
+                taskToStart = await _taskService.addTask(
+                  taskName,
+                  _selectedProject!.id,
+                );
                 _loadData();
-                setState(() {
-                  _selectedTask = newTask;
-                });
               }
+              setState(() {
+                _selectedTask = taskToStart;
+              });
+              await timerService.startTimer(taskToStart);
             }
           },
-          color: timerService.isRunning
-              ? AppTheme.adwaitaTextColor
-              : AppTheme.adwaitaBlue,
         ),
       ],
     );

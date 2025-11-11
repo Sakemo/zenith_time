@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -21,7 +23,18 @@ import 'package:zenith_time/app/ui/main_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  final appSupportDir = await getApplicationSupportDirectory();
+
   await Hive.initFlutter();
+  final dir = await getApplicationDocumentsDirectory();
+  print('Hive path: ${dir.path}');
+
+  // Se houver um arquivo .lock, delete também
+  final lockFile = File('${appSupportDir.path}/projects.lock');
+  if (await lockFile.exists()) {
+    await lockFile.delete();
+  }
 
   //adapters generators or something like that
   Hive.registerAdapter(ProjectAdapter());
@@ -53,4 +66,3 @@ class ZenithTimeApp extends StatelessWidget {
     );
   }
 }
-
