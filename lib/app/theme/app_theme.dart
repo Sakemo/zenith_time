@@ -1,13 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Noire Truth
-  // static const Color adwaitaBlue = Color(0xFF1E1C32);
-  // static const Color adwaitaBackground = Color(0xFFC6BAAC);
-  // static const Color adwaitaHeaderBar = Color(0xFF1E1C32);
-  // static const Color adwaitaTextColor = Color(0xFF1E1C32);
-
-  static const Color adwaitaBlue = Color(0xFF1E1C32);
+  static const Color adwaitaBlue = Color(0xFF222323);
   static const Color adwaitaBackground = Color(0xFFF0F6F0);
   static const Color adwaitaHeaderBar = Color(0xFF222323);
   static const Color adwaitaTextColor = Color(0xFF222323);

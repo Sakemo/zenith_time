@@ -1,3 +1,4 @@
+import 'package:custom_pop_up_menu/custom_pop_up_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
@@ -16,6 +17,8 @@ class TrackerScreen extends StatefulWidget {
 
 class _TrackerScreenState extends State<TrackerScreen> {
   final TextEditingController _taskNameController = TextEditingController();
+  final CustomPopupMenuController _popupController =
+      CustomPopupMenuController();
 
   late final ProjectService _projectService;
   late final TaskService _taskService;
@@ -54,6 +57,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
   @override
   void dispose() {
     _taskNameController.dispose();
+    _popupController.dispose();
     super.dispose();
   }
 
@@ -138,6 +142,95 @@ class _TrackerScreenState extends State<TrackerScreen> {
     return '$hours:$minutes:$seconds';
   }
 
+  Widget _buildProjectSelectorMenu() {
+    String searchQuery = '';
+
+    return StatefulBuilder(
+      builder: (context, setMenuState) {
+        final filteredProjects = _projects
+            .where(
+              (p) => p.name.toLowerCase().contains(searchQuery.toLowerCase()),
+            )
+            .toList();
+
+        return Container(
+          width: 280,
+          decoration: BoxDecoration(
+            color: AppTheme.adwaitaBackground,
+            borderRadius: BorderRadius.circular(12.0),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.adwaitaTextColor.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  onChanged: (value) => setMenuState(() => searchQuery = value),
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    hintText: 'Search Projects...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: AppTheme.adwaitaHeaderBar.withOpacity(0.1),
+                  ),
+                ),
+              ),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 250),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: filteredProjects.length,
+                  itemBuilder: (context, index) {
+                    final project = filteredProjects[index];
+                    return ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Color(project.colorValue),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          IconData(
+                            project.iconCodePoint,
+                            fontFamily: 'MaterialIcons',
+                          ),
+                          color: AppTheme.adwaitaBackground,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(project.name),
+                      trailing: _selectedProject?.id == project.id
+                          ? const Icon(Icons.check, color: AppTheme.adwaitaBlue)
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          _selectedProject = project;
+                        });
+                        _popupController.hideMenu();
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildActionToolbar(TimerService timerService) {
     return Row(
       children: [
@@ -153,29 +246,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
         ),
         const SizedBox(width: 16),
 
-        PopupMenuButton<Project>(
-          onSelected: (Project project) {
-            setState(() {
-              _selectedProject = project;
-            });
-          },
-          itemBuilder: (BuildContext context) {
-            return _projects.map((Project project) {
-              return PopupMenuItem<Project>(
-                value: project,
-                child: Row(
-                  children: [
-                    Text(project.name),
-                    if (_selectedProject?.id == project.id) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.check, size: 16),
-                    ],
-                  ],
-                ),
-              );
-            }).toList();
-          },
-          tooltip: 'Select project',
+        CustomPopupMenu(
+          controller: _popupController,
+          menuBuilder: _buildProjectSelectorMenu,
+          pressType: PressType.singleClick,
           child: _selectedProject == null
               ? const Icon(Icons.folder_outlined, color: Colors.grey)
               : Container(
@@ -193,7 +267,6 @@ class _TrackerScreenState extends State<TrackerScreen> {
                   ),
                 ),
         ),
-
         const SizedBox(width: 16),
 
         Text(
