@@ -82,7 +82,7 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
               iconColor: iconColor,
               hoverDecoration: BoxDecoration(
                 color: accentBlue.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 boxShadow: [
                   BoxShadow(
                     color: accentBlue.withOpacity(0.18),
@@ -109,7 +109,7 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
               iconColor: iconColor,
               hoverDecoration: BoxDecoration(
                 color: accentBlue.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 boxShadow: [
                   BoxShadow(
                     color: accentBlue.withOpacity(0.18),
@@ -128,7 +128,7 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
               // fechar usa hover com leve vermelho para sinalizar perigo, mantendo estética
               hoverDecoration: BoxDecoration(
                 color: closeHoverRed.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
                 boxShadow: [
                   BoxShadow(
                     color: closeHoverRed.withOpacity(0.18),
@@ -177,7 +177,7 @@ class _TitleBarButtonState extends State<_TitleBarButton> {
     // base decoration (transparente) e hover animation
     final baseDecoration = BoxDecoration(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(6),
     );
 
     return MouseRegion(
