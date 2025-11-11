@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
-
+import 'package:window_manager/window_manager.dart';
 // services
 import 'package:zenith_time/features/projects/logic/project_service.dart';
 import 'package:zenith_time/features/tracker/logic/task_service.dart';
@@ -23,6 +23,21 @@ import 'package:zenith_time/app/ui/main_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = const WindowOptions(
+    size: Size(900, 700),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.hidden,
+  );
+
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
 
   final appSupportDir = await getApplicationSupportDirectory();
 

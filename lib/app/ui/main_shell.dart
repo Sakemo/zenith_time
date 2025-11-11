@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:zenith_time/features/projects/ui/projects_screen.dart';
 import 'package:zenith_time/features/tracker/ui/tracker_screen.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
+import 'package:zenith_time/app/ui/custom_title_bar.dart';
 
 enum AppScreen { tracker, projects }
 
@@ -65,23 +66,30 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.adwaitaHeaderBar,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            _buildSidebar(),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppTheme.adwaitaBackground,
-                  borderRadius: BorderRadius.circular(6.0),
-                ),
-                child: _buildCurrentScreen(),
+      body: Column(
+        children: [
+          const CustomTitleBar(),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  _buildSidebar(),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.adwaitaBackground,
+                        borderRadius: BorderRadius.circular(6.0),
+                      ),
+                      child: _buildCurrentScreen(),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
