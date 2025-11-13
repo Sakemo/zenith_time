@@ -16,10 +16,14 @@ class Task extends HiveObject {
   @HiveField(3)
   final DateTime createdAt;
 
+  @HiveField(4)
+  DateTime lastUsed;
+
   Task({
     required this.id,
     required this.name,
     required this.projectId,
     required this.createdAt,
+    required this.lastUsed,
   });
 }

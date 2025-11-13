@@ -27,8 +27,9 @@ class TrackerScreen extends StatefulWidget {
 class _TrackerScreenState extends State<TrackerScreen> {
   late final ProjectService _projectService;
   late final TaskService _taskService;
+
+  List<Task> _allTasks = [];
   List<Project> _projects = [];
-  Map<String, List<Task>> _tasksByProject = {};
 
   String _taskSearchQuery = '';
   TimeFilter _currentTimeFilter = TimeFilter.week;
@@ -50,23 +51,15 @@ class _TrackerScreenState extends State<TrackerScreen> {
   void _loadData() {
     setState(() {
       _projects = _projectService.getAllProjects();
-      final allTasks = _taskService.getAllTasks();
-      _tasksByProject = {};
-      for (final project in _projects) {
-        _tasksByProject[project.id] = allTasks
-            .where((task) => task.projectId == project.id)
-            .toList();
-      }
+      _allTasks = _taskService.getAllTasks();
+      _allTasks.sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final Map<String, List<Task>> displayedTasks = _filterTasks();
+    final displayedTasks = _filterTasks();
 
-    if (_projects.isEmpty) {
-      return const Center(child: Text('Crie seu primeiro projeto'));
-    }
     return Column(
       children: [
         Padding(
@@ -122,29 +115,48 @@ class _TrackerScreenState extends State<TrackerScreen> {
           ),
         ),
         Expanded(
-          child: _projects.isEmpty
-              ? const Center(child: Text('Create the first project'))
+          child: displayedTasks.isEmpty
+              ? const Center(child: Text('No tasks found'))
               : ListView.builder(
                   padding: const EdgeInsets.all(16.0),
-                  itemCount: _projects.length,
+                  itemCount: displayedTasks.length,
                   itemBuilder: (context, index) {
-                    final project = _projects[index];
-                    final tasks = _tasksByProject[project.id] ?? [];
+                    final task = displayedTasks[index];
+                    final project = _projects.firstWhere(
+                      (p) => p.id == task.projectId,
+                      orElse: () => _projects.isNotEmpty
+                          ? _projects.first
+                          : Project(
+                              id: '',
+                              name: 'Default',
+                              createdAt: DateTime.now(),
+                              iconCodePoint: Icons.folder.codePoint,
+                              colorValue: Colors.grey.value,
+                            ),
+                    );
 
-                    return ExpansionTile(
-                      title: Text(
-                        project.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                    return ListTile(
+                      leading: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Color(project.colorValue),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          IconData(
+                            project.iconCodePoint,
+                            fontFamily: 'MaterialIcons',
+                          ),
+                          color: AppTheme.adwaitaBackground,
+                        ),
                       ),
-                      children: tasks.map((task) {
-                        return ListTile(
-                          title: Text(task.name),
-                          selected: widget.selectedTask?.id == task.id,
-                          selectedTileColor: AppTheme.adwaitaHeaderBar
-                              .withOpacity(0.1),
-                          onTap: () => widget.onTaskSelected(task),
-                        );
-                      }).toList(),
+                      title: Text(task.name),
+                      subtitle: Text(project.name),
+                      selected: widget.selectedTask?.id == task.id,
+                      selectedTileColor: AppTheme.adwaitaHeaderBar.withOpacity(
+                        0.1,
+                      ),
+                      onTap: () => widget.onTaskSelected(task),
                     );
                   },
                 ),
@@ -153,30 +165,16 @@ class _TrackerScreenState extends State<TrackerScreen> {
     );
   }
 
-  Map<String, List<Task>> _filterTasks() {
-    final Map<String, List<Task>> filteredMap = {};
-
+  List<Task> _filterTasks() {
     if (_taskSearchQuery.isEmpty) {
-      return _tasksByProject;
+      return _allTasks;
     }
 
-    for (var entry in _tasksByProject.entries) {
-      final projectId = entry.key;
-      final tasks = entry.value;
-
-      final matchingTasks = tasks.where((task) {
-        final project = _projects.firstWhere((p) => p.id == task.projectId);
-        return task.name.toLowerCase().contains(
-              _taskSearchQuery.toLowerCase(),
-            ) ||
-            project.name.toLowerCase().contains(_taskSearchQuery.toLowerCase());
-      }).toList();
-
-      if (matchingTasks.isNotEmpty) {
-        filteredMap[projectId] = matchingTasks;
-      }
-    }
-    return filteredMap;
+    return _allTasks.where((task) {
+      final project = _projects.firstWhere((p) => p.id == task.projectId);
+      return task.name.toLowerCase().contains(_taskSearchQuery.toLowerCase()) ||
+          project.name.toLowerCase().contains(_taskSearchQuery.toLowerCase());
+    }).toList();
   }
 }
 

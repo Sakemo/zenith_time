@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
 import 'package:zenith_time/core/models/project_model.dart';
 import 'package:zenith_time/features/projects/logic/project_service.dart';
+import 'package:zenith_time/core/models/task_model.dart';
+import 'package:zenith_time/features/tracker/logic/task_service.dart';
 
 const List<IconData> projectIcons = [
   Icons.work,
@@ -34,15 +36,19 @@ class ProjectsScreen extends StatefulWidget {
 }
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
+  late final TaskService _taskService;
+  late final ProjectService _projectService;
+  String? _expandedProjectId;
+
   late List<Project> _allProjects;
   List<Project> _filteredProjects = [];
   String _searchQuery = '';
-  late final ProjectService _projectService;
 
   @override
   void initState() {
     super.initState();
     _projectService = context.read<ProjectService>();
+    _taskService = context.read<TaskService>();
     _loadProjects();
   }
 
@@ -158,11 +164,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
               ),
               actions: <Widget>[
                 TextButton(
-                  child: const Text('CANCELAR'),
+                  child: const Text('CANCEL'),
                   onPressed: () => Navigator.pop(context),
                 ),
                 TextButton(
-                  child: const Text('CRIAR'),
+                  child: const Text('CREATE'),
                   onPressed: () async {
                     if (dialogTextController.text.isNotEmpty) {
                       await _projectService.addProject(
@@ -170,6 +176,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         selectedIcon.codePoint,
                         selectedColor.value,
                       );
+                      _loadProjects();
                       widget.onDataChanged();
                       Navigator.pop(context);
                     }
@@ -242,23 +249,59 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       itemCount: _filteredProjects.length,
                       itemBuilder: (context, index) {
                         final project = _filteredProjects[index];
-                        return ListTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Color(project.colorValue),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              IconData(
-                                project.iconCodePoint,
-                                fontFamily: 'MaterialIcons',
+                        final isExpanded = _expandedProjectId == project.id;
+
+                        final tasks = isExpanded
+                            ? _taskService.getTasksForProject(project.id)
+                            : <Task>[];
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Column(
+                            children: [
+                              ListTile(
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Color(project.colorValue),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    IconData(
+                                      project.iconCodePoint,
+                                      fontFamily: 'MaterialIcons',
+                                    ),
+                                    color: AppTheme.adwaitaBackground,
+                                  ),
+                                ),
+                                title: Text(project.name),
+                                trailing: Icon(
+                                  isExpanded
+                                      ? Icons.expand_less
+                                      : Icons.expand_more,
+                                ),
+                                onTap: () {
+                                  setState(() {
+                                    if (isExpanded) {
+                                      _expandedProjectId = null;
+                                    } else {
+                                      _expandedProjectId = project.id;
+                                    }
+                                  });
+                                },
                               ),
-                              color: AppTheme.adwaitaBackground,
-                            ),
+                              if (isExpanded)
+                                ...tasks
+                                    .map(
+                                      (task) => ListTile(
+                                        title: Text(task.name),
+                                        contentPadding: const EdgeInsets.only(
+                                          left: 72,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                            ],
                           ),
-                          title: Text(project.name),
-                          onTap: () {},
                         );
                       },
                     ),

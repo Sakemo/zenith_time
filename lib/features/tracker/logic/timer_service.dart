@@ -1,3 +1,4 @@
+import 'package:zenith_time/features/tracker/logic/task_service.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:zenith_time/core/models/task_model.dart';
@@ -5,6 +6,7 @@ import 'package:zenith_time/core/models/time_entry_model.dart';
 import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
 
 class TimerService extends ChangeNotifier {
+  final TaskService _taskService = TaskService();
   final TimeEntryService _timeEntryService = TimeEntryService();
   Timer? _timer;
 
@@ -36,6 +38,9 @@ class TimerService extends ChangeNotifier {
     }
 
     _timer?.cancel();
+
+    _activeTask!.lastUsed = DateTime.now();
+    await _taskService.updateTask(_activeTask!);
 
     _activeTimeEntry!.endTime = DateTime.now();
     await _timeEntryService.updateEntry(_activeTimeEntry!);

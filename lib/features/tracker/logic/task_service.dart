@@ -18,6 +18,7 @@ class TaskService {
       name: name,
       projectId: projectId,
       createdAt: DateTime.now(),
+      lastUsed: DateTime.now(),
     );
 
     await _tasksBox.put(newTask.id, newTask);
