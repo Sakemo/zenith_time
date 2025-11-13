@@ -1,3 +1,4 @@
+import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
@@ -27,6 +28,7 @@ class TrackerScreen extends StatefulWidget {
 class _TrackerScreenState extends State<TrackerScreen> {
   late final ProjectService _projectService;
   late final TaskService _taskService;
+  late final TimeEntryService _timeEntryService;
 
   List<Task> _allTasks = [];
   List<Project> _projects = [];
@@ -39,7 +41,16 @@ class _TrackerScreenState extends State<TrackerScreen> {
     super.initState();
     _projectService = context.read<ProjectService>();
     _taskService = context.read<TaskService>();
+    _timeEntryService = context.read<TimeEntryService>();
     _loadData();
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$hours:$minutes:$seconds';
   }
 
   @override
@@ -75,7 +86,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
                     prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(6.0),
+                        bottomLeft: Radius.circular(6.0),
+                      ),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
@@ -83,14 +97,13 @@ class _TrackerScreenState extends State<TrackerScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 0),
               PopupMenuButton<TimeFilter>(
                 onSelected: (filter) =>
                     setState(() => _currentTimeFilter = filter),
                 itemBuilder: (context) => TimeFilter.values.map((filter) {
                   return PopupMenuItem(
                     value: filter,
-
                     child: Text(filter.name.capitalize()),
                   );
                 }).toList(),
@@ -100,8 +113,11 @@ class _TrackerScreenState extends State<TrackerScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.adwaitaHeaderBar.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8.0),
+                    color: AppTheme.adwaitaHeaderBar.withOpacity(0.16),
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(6.0),
+                      bottomRight: Radius.circular(6.0),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -135,6 +151,10 @@ class _TrackerScreenState extends State<TrackerScreen> {
                             ),
                     );
 
+                    final taskDuration = _timeEntryService.getDurationForTask(
+                      task.id,
+                    );
+
                     return ListTile(
                       leading: Container(
                         padding: const EdgeInsets.all(8),
@@ -152,6 +172,13 @@ class _TrackerScreenState extends State<TrackerScreen> {
                       ),
                       title: Text(task.name),
                       subtitle: Text(project.name),
+                      trailing: Text(
+                        _formatDuration(taskDuration),
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          color: Colors.grey,
+                        ),
+                      ),
                       selected: widget.selectedTask?.id == task.id,
                       selectedTileColor: AppTheme.adwaitaHeaderBar.withOpacity(
                         0.1,

@@ -8,7 +8,7 @@ import 'package:window_manager/window_manager.dart';
 // services
 import 'package:zenith_time/features/projects/logic/project_service.dart';
 import 'package:zenith_time/features/tracker/logic/task_service.dart';
-
+import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
 //database
 import 'package:zenith_time/core/database/database_service.dart';
 
@@ -71,6 +71,7 @@ class ZenithTimeApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => TimerService()),
         Provider(create: (context) => ProjectService()),
         Provider(create: (context) => TaskService()),
+        Provider(create: (context) => TimeEntryService()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

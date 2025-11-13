@@ -5,6 +5,7 @@ import 'package:zenith_time/core/models/project_model.dart';
 import 'package:zenith_time/features/projects/logic/project_service.dart';
 import 'package:zenith_time/core/models/task_model.dart';
 import 'package:zenith_time/features/tracker/logic/task_service.dart';
+import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
 
 const List<IconData> projectIcons = [
   Icons.work,
@@ -38,6 +39,7 @@ class ProjectsScreen extends StatefulWidget {
 class _ProjectsScreenState extends State<ProjectsScreen> {
   late final TaskService _taskService;
   late final ProjectService _projectService;
+  late final TimeEntryService _timeEntryService;
   String? _expandedProjectId;
 
   late List<Project> _allProjects;
@@ -49,7 +51,16 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     super.initState();
     _projectService = context.read<ProjectService>();
     _taskService = context.read<TaskService>();
+    _timeEntryService = context.read<TimeEntryService>();
     _loadProjects();
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$hours:$minutes:$seconds';
   }
 
   void _loadProjects() {
@@ -195,7 +206,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -211,8 +222,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       hintText: 'Search projects...',
                       prefixIcon: const Icon(Icons.search, size: 20),
                       isDense: true,
+
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(6.0),
+                          bottomLeft: Radius.circular(6.0),
+                        ),
                         borderSide: BorderSide.none,
                       ),
                       filled: true,
@@ -220,16 +235,20 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 0),
                 ElevatedButton.icon(
                   onPressed: _showAddProjectDialog,
                   icon: const Icon(Icons.add, size: 20),
-                  label: const Text('Add Project'),
+                  label: const Text('Add'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.adwaitaBlue,
                     foregroundColor: AppTheme.adwaitaBackground,
+                    minimumSize: Size(0, 48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8.0),
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(6.0),
+                        bottomRight: Radius.circular(6.0),
+                      ),
                     ),
                   ),
                 ),
@@ -254,16 +273,22 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                         final tasks = isExpanded
                             ? _taskService.getTasksForProject(project.id)
                             : <Task>[];
+
+                        final projectDuration = _timeEntryService
+                            .getDurationForProject(project.id);
+
                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          elevation: 0,
+                          color: AppTheme.adwaitaBackground,
+                          margin: const EdgeInsets.symmetric(vertical: 1.0),
                           child: Column(
                             children: [
                               ListTile(
                                 leading: Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: Color(project.colorValue),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Icon(
                                     IconData(
@@ -274,10 +299,12 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   ),
                                 ),
                                 title: Text(project.name),
-                                trailing: Icon(
-                                  isExpanded
-                                      ? Icons.expand_less
-                                      : Icons.expand_more,
+                                trailing: Text(
+                                  _formatDuration(projectDuration),
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    color: Colors.grey,
+                                  ),
                                 ),
                                 onTap: () {
                                   setState(() {
@@ -290,16 +317,23 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                 },
                               ),
                               if (isExpanded)
-                                ...tasks
-                                    .map(
-                                      (task) => ListTile(
-                                        title: Text(task.name),
-                                        contentPadding: const EdgeInsets.only(
-                                          left: 72,
-                                        ),
+                                ...tasks.map((task) {
+                                  final taskDuration = _timeEntryService
+                                      .getDurationForTask(task.id);
+                                  return ListTile(
+                                    title: Text(task.name),
+                                    trailing: Text(
+                                      _formatDuration(taskDuration),
+                                      style: const TextStyle(
+                                        fontFamily: 'monospace',
+                                        color: Colors.grey,
                                       ),
-                                    )
-                                    .toList(),
+                                    ),
+                                    contentPadding: const EdgeInsets.only(
+                                      left: 24,
+                                    ),
+                                  );
+                                }).toList(),
                             ],
                           ),
                         );
