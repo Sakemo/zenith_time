@@ -1,5 +1,3 @@
-// lib/features/projects/ui/projects_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
@@ -28,14 +26,17 @@ const List<Color> projectColors = [
 ];
 
 class ProjectsScreen extends StatefulWidget {
-  const ProjectsScreen({super.key});
+  final VoidCallback onDataChanged;
+  const ProjectsScreen({super.key, required this.onDataChanged});
 
   @override
   State<ProjectsScreen> createState() => _ProjectsScreenState();
 }
 
 class _ProjectsScreenState extends State<ProjectsScreen> {
-  late List<Project> _projects;
+  late List<Project> _allProjects;
+  List<Project> _filteredProjects = [];
+  String _searchQuery = '';
   late final ProjectService _projectService;
 
   @override
@@ -47,7 +48,22 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   void _loadProjects() {
     setState(() {
-      _projects = _projectService.getAllProjects();
+      _allProjects = _projectService.getAllProjects();
+      _filterProjects();
+    });
+  }
+
+  void _filterProjects() {
+    setState(() {
+      if (_searchQuery.isEmpty) {
+        _filteredProjects = _allProjects;
+      } else {
+        _filteredProjects = _allProjects
+            .where(
+              (p) => p.name.toLowerCase().contains(_searchQuery.toLowerCase()),
+            )
+            .toList();
+      }
     });
   }
 
@@ -59,7 +75,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     return showDialog(
       context: context,
       builder: (context) {
-        // StatefulBuilder para gerenciar o estado *dentro* do dialog
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
@@ -81,7 +96,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    // Seletor de Cores
+
                     Wrap(
                       spacing: 8.0,
                       runSpacing: 8.0,
@@ -112,7 +127,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
-                    // Seletor de Ícones
+
                     Wrap(
                       spacing: 8.0,
                       runSpacing: 8.0,
@@ -152,10 +167,10 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                     if (dialogTextController.text.isNotEmpty) {
                       await _projectService.addProject(
                         dialogTextController.text,
-                        selectedIcon.codePoint, // Salva o código do ícone
-                        selectedColor.value, // Salva o valor da cor
+                        selectedIcon.codePoint,
+                        selectedColor.value,
                       );
-                      _loadProjects();
+                      widget.onDataChanged();
                       Navigator.pop(context);
                     }
                   },
@@ -177,17 +192,56 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Projetos', style: Theme.of(context).textTheme.headlineMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    onChanged: (value) {
+                      _searchQuery = value;
+                      _filterProjects();
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search projects...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.adwaitaHeaderBar.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: _showAddProjectDialog,
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text('Add Project'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.adwaitaBlue,
+                    foregroundColor: AppTheme.adwaitaBackground,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             Expanded(
-              child: _projects.isEmpty
-                  ? const Center(
-                      child: Text('Crie seu primeiro projeto no botão +'),
+              child: _filteredProjects.isEmpty
+                  ? Center(
+                      child: Text(
+                        _searchQuery.isEmpty
+                            ? 'Crie seu primeiro projeto no botão +'
+                            : 'No projects found',
+                      ),
                     )
                   : ListView.builder(
-                      itemCount: _projects.length,
+                      itemCount: _allProjects.length,
                       itemBuilder: (context, index) {
-                        final project = _projects[index];
+                        final project = _allProjects[index];
                         return ListTile(
                           leading: Container(
                             padding: const EdgeInsets.all(8),
@@ -211,10 +265,6 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddProjectDialog,
-        child: const Icon(Icons.add),
       ),
     );
   }
