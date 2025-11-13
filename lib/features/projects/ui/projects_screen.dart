@@ -239,9 +239,9 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                       ),
                     )
                   : ListView.builder(
-                      itemCount: _allProjects.length,
+                      itemCount: _filteredProjects.length,
                       itemBuilder: (context, index) {
-                        final project = _allProjects[index];
+                        final project = _filteredProjects[index];
                         return ListTile(
                           leading: Container(
                             padding: const EdgeInsets.all(8),
