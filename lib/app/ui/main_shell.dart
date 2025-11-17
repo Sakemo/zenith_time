@@ -84,7 +84,7 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildSidebar() {
     return Container(
-      width: 124,
+      width: 100,
       padding: const EdgeInsets.symmetric(vertical: 24.0),
       decoration: BoxDecoration(
         color: AppTheme.adwaitaTextColor,
@@ -163,8 +163,6 @@ class _MainShellState extends State<MainShell> {
       ),
       child: Row(
         children: [
-          Icon(Icons.watch_later_outlined, color: Colors.grey),
-          const SizedBox(width: 4),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
