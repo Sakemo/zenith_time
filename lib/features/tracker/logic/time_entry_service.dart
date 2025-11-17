@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import 'package:zenith_time/core/database/database_service.dart';
@@ -9,6 +10,47 @@ class TimeEntryService {
   final Box<TimeEntry> _entriesBox = Hive.box<TimeEntry>(timeEntriesBoxName);
   final Box<Task> _taskBox = Hive.box<Task>(tasksBoxName);
   final _uuid = const Uuid();
+
+  List<TimeEntry> getEntriesInRange({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final allEntries = _entriesBox.values.where((e) => e.endTime != null);
+
+    final filteredEntries = allEntries.where((e) {
+      return e.startTime.isAfter(start) && e.startTime.isBefore(end);
+    });
+
+    return filteredEntries.toList();
+  }
+
+  Map<DateTime, Map<String, Duration>> getAggregatedData({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final Map<DateTime, Map<String, Duration>> data = {};
+
+    final allEntries = _entriesBox.values.where((e) => e.endTime != null);
+
+    final filteredEntries = allEntries.where((e) {
+      return e.startTime.isAfter(start) && e.startTime.isBefore(end);
+    });
+
+    for (final entry in filteredEntries) {
+      final day = DateUtils.dateOnly(entry.startTime);
+      final task = _taskBox.get(entry.taskId);
+      if (task == null) continue;
+
+      final projectId = task.projectId;
+      final duration = entry.endTime!.difference(entry.startTime);
+
+      data.putIfAbsent(day, () => {});
+      data[day]!.putIfAbsent(projectId, () => Duration.zero);
+      data[day]![projectId] = data[day]![projectId]! + duration;
+    }
+
+    return data;
+  }
 
   Future<TimeEntry> createEntry(String taskId) async {
     final newEntry = TimeEntry(

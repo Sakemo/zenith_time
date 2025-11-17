@@ -1,3 +1,5 @@
+import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
+import 'package:zenith_time/features/reports/ui/reports_screen.dart';
 import 'package:custom_pop_up_menu/custom_pop_up_menu.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +13,7 @@ import 'package:zenith_time/features/tracker/logic/task_service.dart';
 import 'package:zenith_time/features/tracker/logic/timer_service.dart';
 import 'package:zenith_time/features/tracker/ui/tracker_screen.dart';
 
-enum AppScreen { tracker, projects }
+enum AppScreen { tracker, projects, reports }
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -25,6 +27,7 @@ class _MainShellState extends State<MainShell> {
   final CustomPopupMenuController _popupController =
       CustomPopupMenuController();
 
+  late final TimeEntryService _timeEntryService;
   late final ProjectService _projectService;
   late final TaskService _taskService;
 
@@ -39,6 +42,7 @@ class _MainShellState extends State<MainShell> {
     super.initState();
     _projectService = context.read<ProjectService>();
     _taskService = context.read<TaskService>();
+    _timeEntryService = context.read<TimeEntryService>();
     _loadData();
   }
 
@@ -73,12 +77,14 @@ class _MainShellState extends State<MainShell> {
         );
       case AppScreen.projects:
         return ProjectsScreen(onDataChanged: _loadData);
+      case AppScreen.reports:
+        return const ReportsScreen();
     }
   }
 
   Widget _buildSidebar() {
     return Container(
-      width: 80,
+      width: 124,
       padding: const EdgeInsets.symmetric(vertical: 24.0),
       decoration: BoxDecoration(
         color: AppTheme.adwaitaTextColor,
@@ -107,6 +113,74 @@ class _MainShellState extends State<MainShell> {
             ),
             onPressed: () =>
                 setState(() => _currentScreen = AppScreen.projects),
+          ),
+          const SizedBox(height: 16),
+          IconButton(
+            icon: Icon(
+              Icons.bar_chart,
+              color: _currentScreen == AppScreen.reports
+                  ? AppTheme.adwaitaBackground
+                  : Colors.grey,
+              size: 32,
+            ),
+            onPressed: () => setState(() => _currentScreen = AppScreen.reports),
+          ),
+
+          const Spacer(),
+          const Divider(color: Colors.grey, thickness: 0.2),
+          const Padding(padding: EdgeInsets.only(left: 8.0, bottom: 8.0)),
+          _buildQuickStatsCard(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStatsCard() {
+    final now = DateTime.now();
+    // Calcula o início da semana (última segunda-feira)
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final startOfToday = DateUtils.dateOnly(startOfWeek);
+
+    final weeklyEntries = _timeEntryService.getEntriesInRange(
+      start: startOfToday,
+      end: now,
+    );
+
+    final weeklyDuration = weeklyEntries.isEmpty
+        ? Duration.zero
+        : weeklyEntries
+              .map((e) => e.endTime!.difference(e.startTime))
+              .reduce((a, b) => a + b);
+
+    // Conta as tarefas únicas
+    final uniqueTasks = weeklyEntries.map((e) => e.taskId).toSet().length;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(6.0),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.watch_later_outlined, color: Colors.grey),
+          const SizedBox(width: 4),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This Week',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${_formatDuration(weeklyDuration)} • $uniqueTasks',
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
           ),
         ],
       ),
