@@ -2,10 +2,11 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import 'package:zenith_time/core/database/database_service.dart';
 import 'package:zenith_time/core/models/project_model.dart';
+import 'package:zenith_time/features/tracker/logic/task_service.dart';
 
 class ProjectService {
   final Box<Project> _projectsBox = Hive.box<Project>(projectsBoxName);
-
+  final TaskService _taskService = TaskService();
   final _uuid = const Uuid();
 
   Future<void> addProject(
@@ -37,6 +38,11 @@ class ProjectService {
   }
 
   Future<void> deleteProject(String id) async {
+    final tasksToDelete = _taskService.getTasksForProject(id);
+    for (final task in tasksToDelete) {
+      await _taskService.deleteTask(task.id);
+    }
+
     await _projectsBox.delete(id);
   }
 }

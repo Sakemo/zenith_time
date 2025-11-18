@@ -84,8 +84,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
     });
   }
 
-  Future<void> _showAddProjectDialog() async {
-    final TextEditingController dialogTextController = TextEditingController();
+  Future<void> _showProjectDialog({Project? project}) async {
+    final isEditing = project != null;
+    final TextEditingController dialogTextController = TextEditingController(
+      text: project?.name ?? '',
+    );
     IconData selectedIcon = projectIcons.first;
     Color selectedColor = projectColors.first;
 
@@ -95,7 +98,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('Novo Projeto'),
+              title: Text(isEditing ? 'Edit' : 'New'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -103,13 +106,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   children: [
                     TextField(
                       controller: dialogTextController,
-                      decoration: const InputDecoration(
-                        hintText: "Nome do projeto",
-                      ),
+                      decoration: const InputDecoration(hintText: "Name"),
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'Cor',
+                      'Color',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
@@ -179,14 +180,21 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                   onPressed: () => Navigator.pop(context),
                 ),
                 TextButton(
-                  child: const Text('CREATE'),
+                  child: Text(isEditing ? 'SAVE' : 'CREATE'),
                   onPressed: () async {
                     if (dialogTextController.text.isNotEmpty) {
-                      await _projectService.addProject(
-                        dialogTextController.text,
-                        selectedIcon.codePoint,
-                        selectedColor.value,
-                      );
+                      if (isEditing) {
+                        project.name = dialogTextController.text;
+                        project.iconCodePoint = selectedIcon.codePoint;
+                        project.colorValue = selectedColor.value;
+                        await _projectService.updateProject(project);
+                      } else {
+                        await _projectService.addProject(
+                          dialogTextController.text,
+                          selectedIcon.codePoint,
+                          selectedColor.value,
+                        );
+                      }
                       _loadProjects();
                       widget.onDataChanged();
                       Navigator.pop(context);
@@ -237,7 +245,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                 ),
                 const SizedBox(width: 0),
                 ElevatedButton.icon(
-                  onPressed: _showAddProjectDialog,
+                  onPressed: _showProjectDialog,
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text('Add'),
                   style: ElevatedButton.styleFrom(
@@ -281,60 +289,65 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                           elevation: 0,
                           color: AppTheme.adwaitaBackground,
                           margin: const EdgeInsets.symmetric(vertical: 1.0),
-                          child: Column(
-                            children: [
-                              ListTile(
-                                leading: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: Color(project.colorValue),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Icon(
-                                    IconData(
-                                      project.iconCodePoint,
-                                      fontFamily: 'MaterialIcons',
+                          child: InkWell(
+                            onLongPress: () {
+                              _showContextMenu(context, project);
+                            },
+                            child: Column(
+                              children: [
+                                ListTile(
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: Color(project.colorValue),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                    color: AppTheme.adwaitaBackground,
-                                  ),
-                                ),
-                                title: Text(project.name),
-                                trailing: Text(
-                                  _formatDuration(projectDuration),
-                                  style: const TextStyle(
-                                    fontFamily: 'monospace',
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    if (isExpanded) {
-                                      _expandedProjectId = null;
-                                    } else {
-                                      _expandedProjectId = project.id;
-                                    }
-                                  });
-                                },
-                              ),
-                              if (isExpanded)
-                                ...tasks.map((task) {
-                                  final taskDuration = _timeEntryService
-                                      .getDurationForTask(task.id);
-                                  return ListTile(
-                                    title: Text(task.name),
-                                    trailing: Text(
-                                      _formatDuration(taskDuration),
-                                      style: const TextStyle(
-                                        fontFamily: 'monospace',
-                                        color: Colors.grey,
+                                    child: Icon(
+                                      IconData(
+                                        project.iconCodePoint,
+                                        fontFamily: 'MaterialIcons',
                                       ),
+                                      color: AppTheme.adwaitaBackground,
                                     ),
-                                    contentPadding: const EdgeInsets.only(
-                                      left: 24,
+                                  ),
+                                  title: Text(project.name),
+                                  trailing: Text(
+                                    _formatDuration(projectDuration),
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      color: Colors.grey,
                                     ),
-                                  );
-                                }).toList(),
-                            ],
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      if (isExpanded) {
+                                        _expandedProjectId = null;
+                                      } else {
+                                        _expandedProjectId = project.id;
+                                      }
+                                    });
+                                  },
+                                ),
+                                if (isExpanded)
+                                  ...tasks.map((task) {
+                                    final taskDuration = _timeEntryService
+                                        .getDurationForTask(task.id);
+                                    return ListTile(
+                                      title: Text(task.name),
+                                      trailing: Text(
+                                        _formatDuration(taskDuration),
+                                        style: const TextStyle(
+                                          fontFamily: 'monospace',
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      contentPadding: const EdgeInsets.only(
+                                        left: 24,
+                                      ),
+                                    );
+                                  }).toList(),
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -343,6 +356,64 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showContextMenu(BuildContext context, Project project) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return Wrap(
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Editar'),
+              onTap: () {
+                Navigator.pop(context);
+                _showProjectDialog(project: project);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              title: const Text(
+                'Deletar',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                // Adiciona um dialog de confirmação
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      content: Text('Are you sure?'),
+                      actions: <Widget>[
+                        IconButton(
+                          icon: const Icon(Icons.cancel_outlined),
+                          onPressed: () {
+                            Navigator.of(context).pop(false);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.check_rounded),
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (confirm ?? true) {
+                  await _projectService.deleteProject(project.id);
+                  _loadProjects();
+                  widget.onDataChanged();
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

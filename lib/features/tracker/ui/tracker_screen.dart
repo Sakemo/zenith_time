@@ -155,40 +155,100 @@ class _TrackerScreenState extends State<TrackerScreen> {
                       task.id,
                     );
 
-                    return ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Color(project.colorValue),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          IconData(
-                            project.iconCodePoint,
-                            fontFamily: 'MaterialIcons',
+                    return InkWell(
+                      onLongPress: () => _showTaskContextMenu(context, task),
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Color(project.colorValue),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          color: AppTheme.adwaitaBackground,
+                          child: Icon(
+                            IconData(
+                              project.iconCodePoint,
+                              fontFamily: 'MaterialIcons',
+                            ),
+                            color: AppTheme.adwaitaBackground,
+                          ),
                         ),
-                      ),
-                      title: Text(task.name),
-                      subtitle: Text(project.name),
-                      trailing: Text(
-                        _formatDuration(taskDuration),
-                        style: const TextStyle(
-                          fontFamily: 'monospace',
-                          color: Colors.grey,
+                        title: Text(task.name),
+                        subtitle: Text(project.name),
+                        trailing: Text(
+                          _formatDuration(taskDuration),
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            color: Colors.grey,
+                          ),
                         ),
+                        selected: widget.selectedTask?.id == task.id,
+                        selectedTileColor: AppTheme.adwaitaHeaderBar
+                            .withOpacity(0.1),
+                        onTap: () => widget.onTaskSelected(task),
                       ),
-                      selected: widget.selectedTask?.id == task.id,
-                      selectedTileColor: AppTheme.adwaitaHeaderBar.withOpacity(
-                        0.1,
-                      ),
-                      onTap: () => widget.onTaskSelected(task),
                     );
                   },
                 ),
         ),
       ],
+    );
+  }
+
+  void _showTaskContextMenu(BuildContext context, Task task) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext bc) {
+        return Wrap(
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Editar Nome'),
+              onTap: () {
+                Navigator.pop(context);
+                // Lógica para editar a tarefa
+                // Um dialog simples para editar o nome é suficiente
+                // (similar ao _showProjectDialog, mas mais simples)
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.redAccent),
+              title: const Text(
+                'Deletar',
+                style: TextStyle(color: Colors.redAccent),
+              ),
+              onTap: () async {
+                Navigator.pop(context);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      content: Text('Are you sure?'),
+                      actions: <Widget>[
+                        IconButton(
+                          icon: const Icon(Icons.cancel_outlined),
+                          onPressed: () {
+                            Navigator.of(context).pop(false);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.check_rounded),
+                          onPressed: () {
+                            Navigator.of(context).pop(true);
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (confirm ?? false) {
+                  await _taskService.deleteTask(task.id);
+                  _loadData(); // Recarrega os dados na TrackerScreen
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

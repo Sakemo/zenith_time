@@ -2,10 +2,11 @@ import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 import 'package:zenith_time/core/database/database_service.dart';
 import 'package:zenith_time/core/models/task_model.dart';
+import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
 
 class TaskService {
   final Box<Task> _tasksBox = Hive.box(tasksBoxName);
-
+  final TimeEntryService _timeEntryService = TimeEntryService();
   final _uuid = const Uuid();
 
   Future<Task> addTask(String name, String projectId) async {
@@ -41,6 +42,12 @@ class TaskService {
   }
 
   Future<void> deleteTask(String id) async {
+    final entriesToDelete = _timeEntryService.getEntriesForTask(
+      id,
+    ); // Precisamos criar este método
+    for (final entry in entriesToDelete) {
+      await _timeEntryService.deleteEntry(entry.id);
+    }
     await _tasksBox.delete(id);
   }
 }

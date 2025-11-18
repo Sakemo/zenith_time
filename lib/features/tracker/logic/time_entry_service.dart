@@ -11,6 +11,10 @@ class TimeEntryService {
   final Box<Task> _taskBox = Hive.box<Task>(tasksBoxName);
   final _uuid = const Uuid();
 
+  List<TimeEntry> getEntriesForTask(String taskId) {
+    return _entriesBox.values.where((entry) => entry.taskId == taskId).toList();
+  }
+
   List<TimeEntry> getEntriesInRange({
     required DateTime start,
     required DateTime end,
