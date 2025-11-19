@@ -13,6 +13,7 @@ import 'package:zenith_time/features/tracker/logic/task_service.dart';
 import 'package:zenith_time/features/tracker/logic/timer_service.dart';
 import 'package:zenith_time/features/tracker/ui/tracker_screen.dart';
 import 'package:zenith_time/core/models/time_entry_model.dart';
+import 'package:window_manager/window_manager.dart';
 
 enum AppScreen { tracker, projects, reports }
 
@@ -31,6 +32,9 @@ class _MainShellState extends State<MainShell> {
   late final TimeEntryService _timeEntryService;
   late final ProjectService _projectService;
   late final TaskService _taskService;
+
+  bool _isCompactMode = false;
+  Size _lastNormalSize = const Size(900, 700);
 
   List<Project> _projects = [];
   Task? _selectedTask;
@@ -80,6 +84,26 @@ class _MainShellState extends State<MainShell> {
         return ProjectsScreen(onDataChanged: _loadData);
       case AppScreen.reports:
         return const ReportsScreen();
+    }
+  }
+
+  Future<void> _toggleCompactMode() async {
+    await windowManager.setResizable(true);
+
+    if (!_isCompactMode) {
+      _lastNormalSize = await windowManager.getSize();
+    }
+
+    final bool newCompactState = !_isCompactMode;
+
+    if (newCompactState) {
+      await windowManager.setSize(const Size(600, 130), animate: true);
+    } else {
+      await windowManager.setSize(_lastNormalSize, animate: false);
+    }
+
+    if (mounted) {
+      setState(() => _isCompactMode = newCompactState);
     }
   }
 
@@ -193,35 +217,53 @@ class _MainShellState extends State<MainShell> {
       body: Column(
         children: [
           const CustomTitleBar(),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(
-                children: [
-                  _buildSidebar(),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.adwaitaBackground,
-                        borderRadius: BorderRadius.circular(6.0),
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: _buildActionToolbar(timerService),
-                          ),
-                          const Divider(height: 1, color: Colors.black12),
-                          Expanded(child: _buildCurrentScreen()),
-                        ],
+          if (_isCompactMode)
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24.0,
+                  horizontal: 16.0,
+                ),
+                decoration: const BoxDecoration(
+                  color: AppTheme.adwaitaBackground,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(4),
+                    bottomRight: Radius.circular(4),
+                  ),
+                ),
+                child: _buildActionToolbar(context.watch<TimerService>()),
+              ),
+            )
+          else
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Row(
+                  children: [
+                    _buildSidebar(),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.adwaitaBackground,
+                          borderRadius: BorderRadius.circular(6.0),
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: _buildActionToolbar(timerService),
+                            ),
+                            const Divider(height: 1, color: Colors.black12),
+                            Expanded(child: _buildCurrentScreen()),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -230,7 +272,8 @@ class _MainShellState extends State<MainShell> {
   Widget _buildActionToolbar(TimerService timerService) {
     return Row(
       children: [
-        Expanded(
+        Flexible(
+          flex: 2,
           child: TextField(
             controller: _taskNameController,
             decoration: const InputDecoration(
@@ -263,12 +306,15 @@ class _MainShellState extends State<MainShell> {
                 ),
         ),
         const SizedBox(width: 16),
-        Text(
-          _formatDuration(timerService.elapsedDuration),
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'monospace',
+        Expanded(
+          flex: 0,
+          child: Text(
+            _formatDuration(timerService.elapsedDuration),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'monospace',
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -327,6 +373,15 @@ class _MainShellState extends State<MainShell> {
               }
             }
           },
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: Icon(
+            _isCompactMode ? Icons.unfold_more : Icons.unfold_less,
+            color: Colors.grey,
+          ),
+          tooltip: _isCompactMode ? 'Expand' : 'Compact',
+          onPressed: _toggleCompactMode,
         ),
       ],
     );

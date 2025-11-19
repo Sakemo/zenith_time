@@ -213,16 +213,16 @@ class _TrackerScreenState extends State<TrackerScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Editar Tarefa'),
+        title: const Text('Edit Task'),
         content: TextField(controller: controller, autofocus: true),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('CANCELAR'),
+            child: const Text('CANCEL'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('SALVAR'),
+            child: const Text('SAVE'),
           ),
         ],
       ),
