@@ -12,6 +12,7 @@ import 'package:zenith_time/features/projects/ui/projects_screen.dart';
 import 'package:zenith_time/features/tracker/logic/task_service.dart';
 import 'package:zenith_time/features/tracker/logic/timer_service.dart';
 import 'package:zenith_time/features/tracker/ui/tracker_screen.dart';
+import 'package:zenith_time/core/models/time_entry_model.dart';
 
 enum AppScreen { tracker, projects, reports }
 
@@ -84,60 +85,58 @@ class _MainShellState extends State<MainShell> {
 
   Widget _buildSidebar() {
     return Container(
-      width: 100,
-      padding: const EdgeInsets.symmetric(vertical: 24.0),
+      width: 180,
+      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 12.0),
       decoration: BoxDecoration(
-        color: AppTheme.adwaitaTextColor,
+        color: AppTheme.adwaitaBlue,
         borderRadius: BorderRadius.circular(6.0),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          IconButton(
-            icon: Icon(
-              Icons.timer_outlined,
-              color: _currentScreen == AppScreen.tracker
-                  ? AppTheme.adwaitaBackground
-                  : Colors.grey,
-              size: 32,
-            ),
-            onPressed: () => setState(() => _currentScreen = AppScreen.tracker),
-          ),
-          const SizedBox(height: 16),
-          IconButton(
-            icon: Icon(
-              Icons.folder_outlined,
-              color: _currentScreen == AppScreen.projects
-                  ? AppTheme.adwaitaBackground
-                  : Colors.grey,
-              size: 32,
-            ),
-            onPressed: () =>
-                setState(() => _currentScreen = AppScreen.projects),
-          ),
-          const SizedBox(height: 16),
-          IconButton(
-            icon: Icon(
-              Icons.bar_chart,
-              color: _currentScreen == AppScreen.reports
-                  ? AppTheme.adwaitaBackground
-                  : Colors.grey,
-              size: 32,
-            ),
-            onPressed: () => setState(() => _currentScreen = AppScreen.reports),
-          ),
-
+          _buildNavItem(AppScreen.tracker, Icons.timer_outlined, 'Tracker'),
+          _buildNavItem(AppScreen.projects, Icons.folder_outlined, 'Projects'),
+          _buildNavItem(AppScreen.reports, Icons.bar_chart, 'Reports'),
           const Spacer(),
-          const Divider(color: Colors.grey, thickness: 0.2),
-          const Padding(padding: EdgeInsets.only(left: 8.0, bottom: 8.0)),
           _buildQuickStatsCard(),
         ],
       ),
     );
   }
 
+  Widget _buildNavItem(AppScreen screen, IconData icon, String label) {
+    final bool isSelected = _currentScreen == screen;
+    return InkWell(
+      onTap: () => setState(() => _currentScreen = screen),
+      borderRadius: BorderRadius.circular(8.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? Colors.white.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(color: isSelected ? Colors.white : Colors.grey),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickStatsCard() {
     final now = DateTime.now();
-    // Calcula o início da semana (última segunda-feira)
     final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
     final startOfToday = DateUtils.dateOnly(startOfWeek);
 
@@ -152,27 +151,30 @@ class _MainShellState extends State<MainShell> {
               .map((e) => e.endTime!.difference(e.startTime))
               .reduce((a, b) => a + b);
 
-    // Conta as tarefas únicas
     final uniqueTasks = weeklyEntries.map((e) => e.taskId).toSet().length;
 
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(6.0)),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
       child: Row(
         children: [
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 'This Week',
                 style: TextStyle(
-                  color: AppTheme.adwaitaBackground,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                '${_formatDuration(weeklyDuration)} • $uniqueTasks',
+                '${_formatDuration(weeklyDuration)} • $uniqueTasks tarefas',
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             ],
@@ -225,7 +227,6 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  // tracker screen moved logic
   Widget _buildActionToolbar(TimerService timerService) {
     return Row(
       children: [
@@ -240,7 +241,6 @@ class _MainShellState extends State<MainShell> {
           ),
         ),
         const SizedBox(width: 16),
-
         CustomPopupMenu(
           controller: _popupController,
           menuBuilder: _buildProjectSelectorMenu,
@@ -263,7 +263,6 @@ class _MainShellState extends State<MainShell> {
                 ),
         ),
         const SizedBox(width: 16),
-
         Text(
           _formatDuration(timerService.elapsedDuration),
           style: const TextStyle(
@@ -273,7 +272,6 @@ class _MainShellState extends State<MainShell> {
           ),
         ),
         const SizedBox(width: 16),
-
         _buildSoftSquareButton(
           icon: timerService.isRunning ? Icons.stop : Icons.play_arrow,
           color: timerService.isRunning
@@ -289,7 +287,7 @@ class _MainShellState extends State<MainShell> {
               });
             } else {
               String taskName = _taskNameController.text;
-              Task taskToStart;
+              Task? taskToStart;
 
               if (taskName.isEmpty) {
                 final recentTasks = _taskService.getAllTasks()
@@ -313,7 +311,6 @@ class _MainShellState extends State<MainShell> {
                     );
                     return;
                   }
-
                   taskToStart = await _taskService.addTask(
                     taskName,
                     _selectedProject!.id,
@@ -324,7 +321,10 @@ class _MainShellState extends State<MainShell> {
                   _selectedTask = taskToStart;
                 });
               }
-              await timerService.startTimer(taskToStart);
+              if (taskToStart != null) {
+                await timerService.startTimer(taskToStart);
+                setState(() {});
+              }
             }
           },
         ),
@@ -347,7 +347,7 @@ class _MainShellState extends State<MainShell> {
           color: color,
           borderRadius: BorderRadius.circular(6.0),
         ),
-        child: Icon(icon, color: AppTheme.adwaitaBackground),
+        child: Icon(icon, color: Colors.white),
       ),
     );
   }
@@ -374,7 +374,7 @@ class _MainShellState extends State<MainShell> {
 
         return Container(
           width: 280,
-          padding: EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
             color: AppTheme.adwaitaBackground,
             borderRadius: BorderRadius.circular(6.0),

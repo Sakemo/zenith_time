@@ -1,11 +1,14 @@
-// lib/features/reports/ui/reports_screen.dart
-
+import 'package:zenith_time/core/models/time_entry_model.dart';
+import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
 import 'package:zenith_time/core/models/project_model.dart';
+import 'package:zenith_time/core/models/task_model.dart';
 import 'package:zenith_time/features/projects/logic/project_service.dart';
+import 'package:zenith_time/features/tracker/logic/task_service.dart';
 import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
 
 enum ReportTimeFilter { week, month, year, custom }
@@ -20,96 +23,75 @@ class ReportsScreen extends StatefulWidget {
 class _ReportsScreenState extends State<ReportsScreen> {
   late final TimeEntryService _timeEntryService;
   late final ProjectService _projectService;
+  late final TaskService _taskService;
 
   ReportTimeFilter _currentFilter = ReportTimeFilter.week;
   late DateTime _startDate;
+  late DateTime _endDate;
 
   @override
   void initState() {
     super.initState();
     _timeEntryService = context.read<TimeEntryService>();
     _projectService = context.read<ProjectService>();
+    _taskService = context.read<TaskService>();
     _updateDateRange();
   }
 
-  // --- LÓGICA DE DATAS CORRIGIDA E SIMPLIFICADA ---
   void _updateDateRange() {
     final now = DateTime.now();
     setState(() {
       switch (_currentFilter) {
         case ReportTimeFilter.week:
-          // Volta para a última segunda-feira
           _startDate = DateUtils.dateOnly(
-            now.subtract(Duration(days: now.weekday - 1)),
+            now.subtract(Duration(days: now.weekday % 7)),
           );
+          _endDate = _startDate.add(const Duration(days: 7));
           break;
         case ReportTimeFilter.month:
           _startDate = DateTime(now.year, now.month, 1);
+          _endDate = DateTime(now.year, now.month + 1, 1);
           break;
         case ReportTimeFilter.year:
           _startDate = DateTime(now.year, 1, 1);
+          _endDate = DateTime(now.year + 1, 1, 1);
           break;
         case ReportTimeFilter.custom:
-          // Temporariamente, define como a semana atual
           _startDate = DateUtils.dateOnly(
-            now.subtract(Duration(days: now.weekday - 1)),
+            now.subtract(const Duration(days: 6)),
           );
+          _endDate = now.add(const Duration(days: 1));
           break;
       }
     });
   }
 
-  // Calcula o fim do range dinamicamente
-  DateTime get _endDate {
-    switch (_currentFilter) {
-      case ReportTimeFilter.week:
-        return _startDate.add(const Duration(days: 7));
-      case ReportTimeFilter.month:
-        return DateTime(_startDate.year, _startDate.month + 1, 1);
-      case ReportTimeFilter.year:
-        return DateTime(_startDate.year + 1, 1, 1);
-      case ReportTimeFilter.custom:
-        return _startDate.add(const Duration(days: 7));
-    }
-  }
-
-  // Calcula o número de dias no range dinamicamente
-  int get _dayCount {
-    return _endDate.difference(_startDate).inDays;
-  }
-
   @override
   Widget build(BuildContext context) {
-    // A busca de dados agora usa o getter _endDate
-    final aggregatedData = _timeEntryService.getAggregatedData(
+    final entriesInRange = _timeEntryService.getEntriesInRange(
       start: _startDate,
       end: _endDate,
     );
     final allProjects = _projectService.getAllProjects();
 
-    Duration totalDuration = Duration.zero;
-    aggregatedData.values.forEach((dailyMap) {
-      dailyMap.values.forEach((duration) {
-        totalDuration += duration;
-      });
-    });
+    final totalDuration = entriesInRange.isEmpty
+        ? Duration.zero
+        : entriesInRange
+              .map((e) => e.endTime!.difference(e.startTime))
+              .reduce((a, b) => a + b);
 
-    // O cálculo da média agora usa o getter _dayCount
-    final double averageHours = totalDuration.inMinutes / 60 / _dayCount;
+    final dayCount = _endDate.difference(_startDate).inDays;
+    final double averageHours = dayCount > 0
+        ? totalDuration.inMinutes / 60 / dayCount
+        : 0;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Relatórios',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 16),
-
             Row(
               children: ReportTimeFilter.values.map((filter) {
                 if (filter == ReportTimeFilter.custom)
@@ -125,17 +107,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       });
                     },
                     style: ElevatedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: const BorderRadius.all(
-                          Radius.circular(4),
-                        ),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(4)),
                       ),
                       elevation: 0,
                       backgroundColor: isSelected
                           ? AppTheme.adwaitaBlue
                           : AppTheme.adwaitaHeaderBar.withOpacity(0.1),
                       foregroundColor: isSelected
-                          ? AppTheme.adwaitaBackground
+                          ? Colors.white
                           : AppTheme.adwaitaTextColor,
                     ),
                     child: Text(filter.name.capitalize()),
@@ -148,13 +128,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
             SizedBox(
               height: 200,
-              child: BarChart(_buildChartData(aggregatedData, allProjects)),
+              child: _buildChart(entriesInRange, allProjects),
             ),
 
             const SizedBox(height: 32),
-
-            Text('Resumo', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
             Row(
               children: [
                 _buildStatCard(
@@ -182,59 +159,140 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Icon(icon, size: 32, color: AppTheme.adwaitaTextColor),
-              const SizedBox(height: 8),
-              Text(value, style: Theme.of(context).textTheme.headlineMedium),
-              Text(title, style: const TextStyle(color: Colors.grey)),
-            ],
-          ),
-        ),
-      ),
+  Widget _buildChart(List<TimeEntry> entries, List<Project> projects) {
+    switch (_currentFilter) {
+      case ReportTimeFilter.week:
+        return BarChart(_buildWeekChartData(entries, projects));
+      case ReportTimeFilter.month:
+        return BarChart(_buildMonthChartData(entries, projects));
+      case ReportTimeFilter.year:
+        return BarChart(_buildYearChartData(entries, projects));
+      case ReportTimeFilter.custom:
+        return const Center(child: Text("Filtro customizado em breve."));
+    }
+  }
+
+  BarChartData _buildWeekChartData(
+    List<TimeEntry> entries,
+    List<Project> projects,
+  ) {
+    final dailyTotals = List.generate(7, (_) => <String, Duration>{});
+    const weekDayLabels = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+    for (final entry in entries) {
+      final dayIndex = entry.startTime.weekday % 7;
+      final task = _taskService.getTask(entry.taskId);
+      if (task == null) continue;
+
+      dailyTotals[dayIndex].update(
+        task.projectId,
+        (value) => value + entry.endTime!.difference(entry.startTime),
+        ifAbsent: () => entry.endTime!.difference(entry.startTime),
+      );
+    }
+
+    return _buildBarChartData(
+      groupTotals: dailyTotals,
+      projects: projects,
+      bottomTitleBuilder: (value, meta) => weekDayLabels[value.toInt()],
     );
   }
 
-  BarChartData _buildChartData(
-    Map<DateTime, Map<String, Duration>> data,
+  BarChartData _buildMonthChartData(
+    List<TimeEntry> entries,
     List<Project> projects,
   ) {
+    final weeklyTotals = List.generate(4, (_) => <String, Duration>{});
+
+    for (final entry in entries) {
+      final weekIndex = min((entry.startTime.day - 1) ~/ 7, 3);
+      final task = _taskService.getTask(entry.taskId);
+      if (task == null) continue;
+
+      weeklyTotals[weekIndex].update(
+        task.projectId,
+        (value) => value + entry.endTime!.difference(entry.startTime),
+        ifAbsent: () => entry.endTime!.difference(entry.startTime),
+      );
+    }
+
+    return _buildBarChartData(
+      groupTotals: weeklyTotals,
+      projects: projects,
+      bottomTitleBuilder: (value, meta) => 'Sem ${value.toInt() + 1}',
+    );
+  }
+
+  BarChartData _buildYearChartData(
+    List<TimeEntry> entries,
+    List<Project> projects,
+  ) {
+    final monthlyTotals = List.generate(12, (_) => <String, Duration>{});
+    const monthLabels = [
+      'Jan',
+      'Fev',
+      'Mar',
+      'Abr',
+      'Mai',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Set',
+      'Out',
+      'Nov',
+      'Dez',
+    ];
+
+    for (final entry in entries) {
+      final monthIndex = entry.startTime.month - 1;
+      final task = _taskService.getTask(entry.taskId);
+      if (task == null) continue;
+
+      monthlyTotals[monthIndex].update(
+        task.projectId,
+        (value) => value + entry.endTime!.difference(entry.startTime),
+        ifAbsent: () => entry.endTime!.difference(entry.startTime),
+      );
+    }
+
+    return _buildBarChartData(
+      groupTotals: monthlyTotals,
+      projects: projects,
+      bottomTitleBuilder: (value, meta) => monthLabels[value.toInt()],
+    );
+  }
+
+  BarChartData _buildBarChartData({
+    required List<Map<String, Duration>> groupTotals,
+    required List<Project> projects,
+    required String Function(double, TitleMeta) bottomTitleBuilder,
+  }) {
     final List<BarChartGroupData> barGroups = [];
     double maxY = 0;
 
-    // O loop agora usa o getter _dayCount
-    for (int i = 0; i < _dayCount; i++) {
-      final day = _startDate.add(Duration(days: i));
-      final dailyData = data[day];
-
+    for (int i = 0; i < groupTotals.length; i++) {
+      final groupData = groupTotals[i];
       final List<BarChartRodStackItem> rodStackItems = [];
-      double dailyTotalMinutes = 0;
+      double groupTotalMinutes = 0;
 
-      if (dailyData != null) {
-        dailyData.forEach((projectId, duration) {
-          final project = projects.firstWhere(
-            (p) => p.id == projectId,
-            orElse: () => projects.first,
-          );
-          final minutes = duration.inMinutes.toDouble();
-          rodStackItems.add(
-            BarChartRodStackItem(
-              dailyTotalMinutes,
-              dailyTotalMinutes + minutes,
-              Color(project.colorValue),
-            ),
-          );
-          dailyTotalMinutes += minutes;
-        });
-      }
+      groupData.forEach((projectId, duration) {
+        final project = projects.firstWhere(
+          (p) => p.id == projectId,
+          orElse: () => projects.first,
+        );
+        final minutes = duration.inMinutes.toDouble();
+        rodStackItems.add(
+          BarChartRodStackItem(
+            groupTotalMinutes,
+            groupTotalMinutes + minutes,
+            Color(project.colorValue),
+          ),
+        );
+        groupTotalMinutes += minutes;
+      });
 
-      if (dailyTotalMinutes > maxY) {
-        maxY = dailyTotalMinutes;
+      if (groupTotalMinutes > maxY) {
+        maxY = groupTotalMinutes;
       }
 
       barGroups.add(
@@ -242,10 +300,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
           x: i,
           barRods: [
             BarChartRodData(
-              toY: dailyTotalMinutes,
+              toY: groupTotalMinutes,
               rodStackItems: rodStackItems,
               width: 16,
-              borderRadius: const BorderRadius.all(Radius.circular(4)),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(4),
+              ),
             ),
           ],
         ),
@@ -259,7 +320,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
         show: true,
         border: Border(
           bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-          left: BorderSide(color: Colors.grey.shade300, width: 1),
         ),
       ),
       barTouchData: BarTouchData(
@@ -268,45 +328,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
             final hours = rod.toY / 60;
             return BarTooltipItem(
               '${hours.toStringAsFixed(1)}h',
-              const TextStyle(
-                color: AppTheme.adwaitaBackground,
-                fontWeight: FontWeight.bold,
-              ),
+              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             );
           },
         ),
       ),
       titlesData: FlTitlesData(
-        leftTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 40,
-            getTitlesWidget: (value, meta) {
-              if (value == 0 || value > maxY) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Text(
-                  '${(value / 60).round()}h',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              );
-            },
-          ),
-        ),
+        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
         bottomTitles: AxisTitles(
           sideTitles: SideTitles(
             showTitles: true,
             reservedSize: 30,
-            getTitlesWidget: (value, meta) {
-              final day = _startDate.add(Duration(days: value.toInt()));
-              return Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  '${day.day}/${day.month}',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              );
-            },
+            getTitlesWidget: (value, meta) => Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Text(
+                bottomTitleBuilder(value, meta),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ),
           ),
         ),
         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -317,16 +356,44 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
+  Widget _buildStatCard(String title, String value, IconData icon) {
+    return Expanded(
+      child: Card(
+        elevation: 0,
+        color: AppTheme.adwaitaHeaderBar.withOpacity(0.05),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 28, color: AppTheme.adwaitaTextColor),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(title, style: const TextStyle(color: Colors.grey)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(duration.inHours);
     final minutes = twoDigits(duration.inMinutes.remainder(60));
-    return '$hours:$minutes'; // Mostra apenas horas e minutos nos totais
+    return '$hours:$minutes';
   }
 }
 
 extension StringExtension on String {
   String capitalize() {
+    if (isEmpty) return this;
     return "${this[0].toUpperCase()}${substring(1).toLowerCase()}";
   }
 }

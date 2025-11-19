@@ -41,6 +41,10 @@ class TaskService {
     await _tasksBox.put(task.id, task);
   }
 
+  Task? getTask(String id) {
+    return _tasksBox.get(id);
+  }
+
   Future<void> deleteTask(String id) async {
     final entriesToDelete = _timeEntryService.getEntriesForTask(
       id,
