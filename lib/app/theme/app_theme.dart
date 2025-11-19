@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color adwaitaBlue = Color(0xFF222323);
-  static const Color adwaitaBackground = Color(0xFFF0F6F0);
-  static const Color adwaitaHeaderBar = Color(0xFF222323);
-  static const Color adwaitaTextColor = Color(0xFF222323);
+  static const Color adwaitaBlue = Color(0xFF353535);
+  static const Color adwaitaBackground = Color(0xFFf7f7f7);
+  static const Color adwaitaHeaderBar = Color(0xFFf7f7f7);
+  static const Color adwaitaTextColor = Color(0xFF353535);
 
   static ThemeData get themeData {
     return ThemeData(
@@ -16,7 +16,7 @@ class AppTheme {
 
       colorScheme: const ColorScheme.light(
         primary: adwaitaBlue,
-        surface: Colors.white,
+        surface: AppTheme.adwaitaBackground,
         onSurface: adwaitaTextColor,
       ),
 

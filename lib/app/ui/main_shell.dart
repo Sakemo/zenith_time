@@ -96,7 +96,7 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(
               Icons.timer_outlined,
               color: _currentScreen == AppScreen.tracker
-                  ? Colors.white
+                  ? AppTheme.adwaitaBackground
                   : Colors.grey,
               size: 32,
             ),
@@ -107,7 +107,7 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(
               Icons.folder_outlined,
               color: _currentScreen == AppScreen.projects
-                  ? Colors.white
+                  ? AppTheme.adwaitaBackground
                   : Colors.grey,
               size: 32,
             ),
@@ -157,10 +157,7 @@ class _MainShellState extends State<MainShell> {
 
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(6.0),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(6.0)),
       child: Row(
         children: [
           Column(
@@ -169,7 +166,7 @@ class _MainShellState extends State<MainShell> {
               const Text(
                 'This Week',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.adwaitaBackground,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -350,7 +347,7 @@ class _MainShellState extends State<MainShell> {
           color: color,
           borderRadius: BorderRadius.circular(6.0),
         ),
-        child: Icon(icon, color: Colors.white),
+        child: Icon(icon, color: AppTheme.adwaitaBackground),
       ),
     );
   }

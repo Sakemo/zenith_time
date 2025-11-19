@@ -1,5 +1,9 @@
-// lib/app/ui/widgets/custom_title_bar.dart
-
+import 'package:flutter/foundation.dart';
+import 'package:provider/provider.dart';
+import 'package:zenith_time/core/dev/data_seeder.dart';
+import 'package:zenith_time/features/projects/logic/project_service.dart';
+import 'package:zenith_time/features/tracker/logic/task_service.dart';
+import 'package:zenith_time/features/tracker/logic/time_entry_service.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:zenith_time/app/theme/app_theme.dart';
@@ -48,9 +52,9 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
   Widget build(BuildContext context) {
     // paleta inspirada no moodboard: fundo escuro + acento azul (ícones brancos)
     final bgColor = AppTheme.adwaitaHeaderBar;
-    const iconColor = Colors.white;
-    const accentBlue = Color(0xFF71A8C6); // tom azul do moodboard
-    const closeHoverRed = Color(0xFFE06A6A);
+    const iconColor = AppTheme.adwaitaTextColor;
+    const closeHoverRed = AppTheme.adwaitaBlue;
+    const accentBlue = AppTheme.adwaitaBlue;
 
     return DragToMoveArea(
       child: Container(
@@ -59,13 +63,43 @@ class _CustomTitleBarState extends State<CustomTitleBar> with WindowListener {
         color: bgColor,
         child: Row(
           children: [
+            if (kDebugMode)
+              IconButton(
+                icon: const Icon(
+                  Icons.bug_report,
+                  color: AppTheme.adwaitaTextColor,
+                  size: 16,
+                ),
+                tooltip: 'Seed Mock Data',
+                onPressed: () async {
+                  // Pega as instâncias dos serviços
+                  final projectService = context.read<ProjectService>();
+                  final taskService = context.read<TaskService>();
+                  final timeEntryService = context.read<TimeEntryService>();
+
+                  // Cria e executa o seeder
+                  final seeder = DataSeeder(
+                    projectService,
+                    taskService,
+                    timeEntryService,
+                  );
+                  await seeder.seedDatabase();
+
+                  // Mostra um feedback
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Dados de teste gerados com sucesso!'),
+                    ),
+                  );
+                },
+              ),
             // título centralizado visualmente à esquerda (ocupar espaço)
             const Expanded(
               child: Center(
                 child: Text(
                   'Zenith Time',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: AppTheme.adwaitaTextColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0.2,

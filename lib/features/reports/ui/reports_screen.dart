@@ -135,7 +135,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           ? AppTheme.adwaitaBlue
                           : AppTheme.adwaitaHeaderBar.withOpacity(0.1),
                       foregroundColor: isSelected
-                          ? Colors.white
+                          ? AppTheme.adwaitaBackground
                           : AppTheme.adwaitaTextColor,
                     ),
                     child: Text(filter.name.capitalize()),
@@ -268,7 +268,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
             final hours = rod.toY / 60;
             return BarTooltipItem(
               '${hours.toStringAsFixed(1)}h',
-              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              const TextStyle(
+                color: AppTheme.adwaitaBackground,
+                fontWeight: FontWeight.bold,
+              ),
             );
           },
         ),
