@@ -29,6 +29,7 @@ class _TrackerScreenState extends State<TrackerScreen> {
   late final ProjectService _projectService;
   late final TaskService _taskService;
   late final TimeEntryService _timeEntryService;
+  String? _contextMenuTaskId;
 
   List<Task> _allTasks = [];
   List<Project> _projects = [];
@@ -71,93 +72,93 @@ class _TrackerScreenState extends State<TrackerScreen> {
   Widget build(BuildContext context) {
     final displayedTasks = _filterTasks();
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  onChanged: (value) =>
-                      setState(() => _taskSearchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: 'Search tasks...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    isDense: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(6.0),
-                        bottomLeft: Radius.circular(6.0),
+    return GestureDetector(
+      onTap: () => setState(() => _contextMenuTaskId = null),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    onChanged: (value) =>
+                        setState(() => _taskSearchQuery = value),
+                    decoration: InputDecoration(
+                      hintText: 'Search tasks...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      isDense: true,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(6.0),
+                          bottomLeft: Radius.circular(6.0),
+                        ),
+                        borderSide: BorderSide.none,
                       ),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.adwaitaHeaderBar.withOpacity(0.1),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 0),
-              PopupMenuButton<TimeFilter>(
-                onSelected: (filter) =>
-                    setState(() => _currentTimeFilter = filter),
-                itemBuilder: (context) => TimeFilter.values.map((filter) {
-                  return PopupMenuItem(
-                    value: filter,
-                    child: Text(filter.name.capitalize()),
-                  );
-                }).toList(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.adwaitaHeaderBar.withOpacity(0.16),
-                    borderRadius: BorderRadius.only(
-                      topRight: Radius.circular(6.0),
-                      bottomRight: Radius.circular(6.0),
+                      filled: true,
+                      fillColor: AppTheme.adwaitaHeaderBar.withOpacity(0.1),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Text(_currentTimeFilter.name.capitalize()),
-                      const Icon(Icons.arrow_drop_down),
-                    ],
+                ),
+                const SizedBox(width: 0),
+                PopupMenuButton<TimeFilter>(
+                  onSelected: (filter) =>
+                      setState(() => _currentTimeFilter = filter),
+                  itemBuilder: (context) => TimeFilter.values.map((filter) {
+                    return PopupMenuItem(
+                      value: filter,
+                      child: Text(filter.name.capitalize()),
+                    );
+                  }).toList(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.adwaitaHeaderBar.withOpacity(0.16),
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(6.0),
+                        bottomRight: Radius.circular(6.0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Text(_currentTimeFilter.name.capitalize()),
+                        const Icon(Icons.arrow_drop_down),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: displayedTasks.isEmpty
-              ? const Center(child: Text('No tasks found'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: displayedTasks.length,
-                  itemBuilder: (context, index) {
-                    final task = displayedTasks[index];
-                    final project = _projects.firstWhere(
-                      (p) => p.id == task.projectId,
-                      orElse: () => _projects.isNotEmpty
-                          ? _projects.first
-                          : Project(
-                              id: '',
-                              name: 'Default',
-                              createdAt: DateTime.now(),
-                              iconCodePoint: Icons.folder.codePoint,
-                              colorValue: Colors.grey.value,
-                            ),
-                    );
+          Expanded(
+            child: displayedTasks.isEmpty
+                ? const Center(child: Text('No tasks found'))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16.0),
+                    itemCount: displayedTasks.length,
+                    itemBuilder: (context, index) {
+                      final task = displayedTasks[index];
+                      final project = _projects.firstWhere(
+                        (p) => p.id == task.projectId,
+                        orElse: () => _projects.isNotEmpty
+                            ? _projects.first
+                            : Project(
+                                id: '',
+                                name: 'Default',
+                                createdAt: DateTime.now(),
+                                iconCodePoint: Icons.folder.codePoint,
+                                colorValue: Colors.grey.value,
+                              ),
+                      );
+                      final taskDuration = _timeEntryService.getDurationForTask(
+                        task.id,
+                      );
+                      final isContextMenuOpen = _contextMenuTaskId == task.id;
 
-                    final taskDuration = _timeEntryService.getDurationForTask(
-                      task.id,
-                    );
-
-                    return InkWell(
-                      onLongPress: () => _showTaskContextMenu(context, task),
-                      child: ListTile(
+                      return ListTile(
                         leading: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -174,21 +175,109 @@ class _TrackerScreenState extends State<TrackerScreen> {
                         ),
                         title: Text(task.name),
                         subtitle: Text(project.name),
-                        trailing: Text(
-                          _formatDuration(taskDuration),
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            color: Colors.grey,
-                          ),
-                        ),
+                        trailing: isContextMenuOpen
+                            ? _buildTaskContextMenuActions(task)
+                            : Text(
+                                _formatDuration(taskDuration),
+                                style: const TextStyle(
+                                  fontFamily: 'monospace',
+                                  color: Colors.grey,
+                                ),
+                              ),
                         selected: widget.selectedTask?.id == task.id,
                         selectedTileColor: AppTheme.adwaitaHeaderBar
                             .withOpacity(0.1),
-                        onTap: () => widget.onTaskSelected(task),
-                      ),
-                    );
-                  },
-                ),
+                        onTap: () {
+                          if (_contextMenuTaskId != null) {
+                            setState(() => _contextMenuTaskId = null);
+                            return;
+                          }
+                          widget.onTaskSelected(task);
+                        },
+                        onLongPress: () {
+                          setState(() => _contextMenuTaskId = task.id);
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditTaskDialog(Task task) async {
+    final TextEditingController controller = TextEditingController(
+      text: task.name,
+    );
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar Tarefa'),
+        content: TextField(controller: controller, autofocus: true),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCELAR'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('SALVAR'),
+          ),
+        ],
+      ),
+    );
+
+    if (newName != null && newName.isNotEmpty) {
+      task.name = newName;
+      await _taskService.updateTask(task);
+      _loadData();
+    }
+  }
+
+  // --- NOVO WIDGET HELPER: AÇÕES DE CONTEXTO ---
+  Widget _buildTaskContextMenuActions(Task task) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.edit, color: Colors.grey),
+          onPressed: () {
+            setState(() => _contextMenuTaskId = null);
+            _showEditTaskDialog(task);
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete, color: Colors.redAccent),
+          onPressed: () async {
+            setState(() => _contextMenuTaskId = null);
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  content: Text('Are you sure?'),
+                  actions: <Widget>[
+                    IconButton(
+                      icon: const Icon(Icons.cancel_outlined),
+                      onPressed: () {
+                        Navigator.of(context).pop(false);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.check_rounded),
+                      onPressed: () {
+                        Navigator.of(context).pop(true);
+                      },
+                    ),
+                  ],
+                );
+              },
+            ); // Dialog de confirmação
+            if (confirm ?? false) {
+              await _taskService.deleteTask(task.id);
+              _loadData();
+            }
+          },
         ),
       ],
     );

@@ -41,6 +41,7 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
   late final ProjectService _projectService;
   late final TimeEntryService _timeEntryService;
   String? _expandedProjectId;
+  String? _contextMenuProjectId;
 
   late List<Project> _allProjects;
   List<Project> _filteredProjects = [];
@@ -211,88 +212,88 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    onChanged: (value) {
-                      _searchQuery = value;
-                      _filterProjects();
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'Search projects...',
-                      prefixIcon: const Icon(Icons.search, size: 20),
-                      isDense: true,
+    return GestureDetector(
+      onTap: () => setState(() => _contextMenuProjectId = null),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      onChanged: (value) {
+                        _searchQuery = value;
+                        _filterProjects();
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search projects...',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        isDense: true,
 
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(6.0),
-                          bottomLeft: Radius.circular(6.0),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(6.0),
+                            bottomLeft: Radius.circular(6.0),
+                          ),
+                          borderSide: BorderSide.none,
                         ),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor: AppTheme.adwaitaHeaderBar.withOpacity(0.1),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 0),
-                ElevatedButton.icon(
-                  onPressed: _showProjectDialog,
-                  icon: const Icon(Icons.add, size: 20),
-                  label: const Text('Add'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.adwaitaBlue,
-                    foregroundColor: AppTheme.adwaitaBackground,
-                    minimumSize: Size(0, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(6.0),
-                        bottomRight: Radius.circular(6.0),
+                        filled: true,
+                        fillColor: AppTheme.adwaitaHeaderBar.withOpacity(0.1),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: _filteredProjects.isEmpty
-                  ? Center(
-                      child: Text(
-                        _searchQuery.isEmpty
-                            ? 'Crie seu primeiro projeto no botão +'
-                            : 'No projects found',
+                  const SizedBox(width: 0),
+                  ElevatedButton.icon(
+                    onPressed: _showProjectDialog,
+                    icon: const Icon(Icons.add, size: 20),
+                    label: const Text('Add'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.adwaitaBlue,
+                      foregroundColor: AppTheme.adwaitaBackground,
+                      minimumSize: Size(0, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(6.0),
+                          bottomRight: Radius.circular(6.0),
+                        ),
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: _filteredProjects.length,
-                      itemBuilder: (context, index) {
-                        final project = _filteredProjects[index];
-                        final isExpanded = _expandedProjectId == project.id;
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _filteredProjects.isEmpty
+                    ? Center(
+                        child: Text(
+                          _searchQuery.isEmpty
+                              ? 'Create your first project +'
+                              : 'No projects found',
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _filteredProjects.length,
+                        itemBuilder: (context, index) {
+                          final project = _filteredProjects[index];
+                          final isExpanded = _expandedProjectId == project.id;
+                          final isContextMenuOpen =
+                              _contextMenuProjectId == project.id;
 
-                        final tasks = isExpanded
-                            ? _taskService.getTasksForProject(project.id)
-                            : <Task>[];
+                          final tasks = isExpanded
+                              ? _taskService.getTasksForProject(project.id)
+                              : <Task>[];
 
-                        final projectDuration = _timeEntryService
-                            .getDurationForProject(project.id);
+                          final projectDuration = _timeEntryService
+                              .getDurationForProject(project.id);
 
-                        return Card(
-                          elevation: 0,
-                          color: AppTheme.adwaitaBackground,
-                          margin: const EdgeInsets.symmetric(vertical: 1.0),
-                          child: InkWell(
-                            onLongPress: () {
-                              _showContextMenu(context, project);
-                            },
+                          return Card(
+                            elevation: 0,
+                            color: AppTheme.adwaitaBackground,
+                            margin: const EdgeInsets.symmetric(vertical: 1.0),
                             child: Column(
                               children: [
                                 ListTile(
@@ -311,14 +312,22 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                     ),
                                   ),
                                   title: Text(project.name),
-                                  trailing: Text(
-                                    _formatDuration(projectDuration),
-                                    style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      color: Colors.grey,
-                                    ),
-                                  ),
+                                  trailing: isContextMenuOpen
+                                      ? _buildContextMenuActions(project)
+                                      : Text(
+                                          _formatDuration(projectDuration),
+                                          style: const TextStyle(
+                                            fontFamily: 'monospace',
+                                            color: Colors.grey,
+                                          ),
+                                        ),
                                   onTap: () {
+                                    if (_contextMenuProjectId != null) {
+                                      setState(
+                                        () => _contextMenuProjectId = null,
+                                      );
+                                      return;
+                                    }
                                     setState(() {
                                       if (isExpanded) {
                                         _expandedProjectId = null;
@@ -326,6 +335,11 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                         _expandedProjectId = project.id;
                                       }
                                     });
+                                  },
+                                  onLongPress: () {
+                                    setState(
+                                      () => _contextMenuProjectId = project.id,
+                                    );
                                   },
                                 ),
                                 if (isExpanded)
@@ -348,72 +362,62 @@ class _ProjectsScreenState extends State<ProjectsScreen> {
                                   }).toList(),
                               ],
                             ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _showContextMenu(BuildContext context, Project project) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext bc) {
-        return Wrap(
-          children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Editar'),
-              onTap: () {
-                Navigator.pop(context);
-                _showProjectDialog(project: project);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.redAccent),
-              title: const Text(
-                'Deletar',
-                style: TextStyle(color: Colors.redAccent),
-              ),
-              onTap: () async {
-                Navigator.pop(context);
-                // Adiciona um dialog de confirmação
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      content: Text('Are you sure?'),
-                      actions: <Widget>[
-                        IconButton(
-                          icon: const Icon(Icons.cancel_outlined),
-                          onPressed: () {
-                            Navigator.of(context).pop(false);
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.check_rounded),
-                          onPressed: () {
-                            Navigator.of(context).pop(true);
-                          },
-                        ),
-                      ],
-                    );
-                  },
+  Widget _buildContextMenuActions(Project project) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.edit, color: Colors.grey),
+          onPressed: () {
+            setState(() => _contextMenuProjectId = null);
+            _showProjectDialog(project: project);
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete, color: Colors.redAccent),
+          onPressed: () async {
+            setState(() => _contextMenuProjectId = null);
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  content: Text('Are you sure?'),
+                  actions: <Widget>[
+                    IconButton(
+                      icon: const Icon(Icons.cancel_outlined),
+                      onPressed: () {
+                        Navigator.of(context).pop(false);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.check_rounded),
+                      onPressed: () {
+                        Navigator.of(context).pop(true);
+                      },
+                    ),
+                  ],
                 );
-                if (confirm ?? true) {
-                  await _projectService.deleteProject(project.id);
-                  _loadProjects();
-                  widget.onDataChanged();
-                }
               },
-            ),
-          ],
-        );
-      },
+            );
+            if (confirm ?? false) {
+              await _projectService.deleteProject(project.id);
+              _loadProjects();
+              widget.onDataChanged();
+            }
+          },
+        ),
+      ],
     );
   }
 }
