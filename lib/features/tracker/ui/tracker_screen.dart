@@ -342,8 +342,27 @@ class _TrackerScreenState extends State<TrackerScreen> {
   }
 
   List<Task> _filterTasks() {
+    List<Task> tasksToDisplay = List.from(_allTasks);
+    final now = DateTime.now();
+
+    switch (_currentTimeFilter) {
+      case TimeFilter.today:
+        final startOfDay = DateUtils.dateOnly(now);
+        tasksToDisplay.retainWhere((task) => task.lastUsed.isAfter(startOfDay));
+        break;
+      case TimeFilter.week:
+        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+        tasksToDisplay.retainWhere(
+          (task) => task.lastUsed.isAfter(DateUtils.dateOnly(startOfWeek)),
+        );
+        break;
+      case TimeFilter.all:
+      default:
+        break;
+    }
+
     if (_taskSearchQuery.isEmpty) {
-      return _allTasks;
+      return tasksToDisplay;
     }
 
     return _allTasks.where((task) {

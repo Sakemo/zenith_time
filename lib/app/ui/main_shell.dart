@@ -291,32 +291,42 @@ class _MainShellState extends State<MainShell> {
                 _loadData();
               });
             } else {
-              final taskName = _taskNameController.text;
-              if (taskName.isEmpty) return;
-
+              String taskName = _taskNameController.text;
               Task taskToStart;
 
-              if (_selectedTask != null && _selectedTask!.name == taskName) {
-                taskToStart = _selectedTask!;
-              } else {
-                if (_selectedProject == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Create and select a project first'),
-                    ),
-                  );
+              if (taskName.isEmpty) {
+                final recentTasks = _taskService.getAllTasks()
+                  ..sort((a, b) => b.lastUsed.compareTo(a.lastUsed));
+                if (recentTasks.isNotEmpty) {
+                  taskToStart = recentTasks.first;
+                  _taskNameController.text = taskToStart.name;
+                  _selectedTask = taskToStart;
+                } else {
                   return;
                 }
+              } else {
+                if (_selectedTask != null && _selectedTask!.name == taskName) {
+                  taskToStart = _selectedTask!;
+                } else {
+                  if (_selectedProject == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Create and select a project first'),
+                      ),
+                    );
+                    return;
+                  }
 
-                taskToStart = await _taskService.addTask(
-                  taskName,
-                  _selectedProject!.id,
-                );
-                _loadData();
+                  taskToStart = await _taskService.addTask(
+                    taskName,
+                    _selectedProject!.id,
+                  );
+                  _loadData();
+                }
+                setState(() {
+                  _selectedTask = taskToStart;
+                });
               }
-              setState(() {
-                _selectedTask = taskToStart;
-              });
               await timerService.startTimer(taskToStart);
             }
           },

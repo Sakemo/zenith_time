@@ -36,7 +36,7 @@ class AppTheme {
       ),
 
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6.0)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4.0)),
       ),
 
       dialogTheme: DialogThemeData(
